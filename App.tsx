@@ -24,15 +24,9 @@ const App: React.FC = () => {
       let num1: number, num2: number, correctAnswer: number;
       let operator: '+' | '-';
 
-      // Xác định toán tử với xác suất thay đổi dựa trên độ khó
+      // Tất cả các cấp độ đều có 50% phép cộng và 50% phép trừ
       const randomOp = Math.random();
-      if (difficulty === Difficulty.Easy) {
-        operator = '+'; // 100% phép cộng
-      } else if (difficulty === Difficulty.Medium) {
-        operator = randomOp < 0.7 ? '+' : '-'; // 70% phép cộng, 30% phép trừ
-      } else { // Khó
-        operator = randomOp < 0.5 ? '+' : '-'; // 50% phép cộng, 50% phép trừ
-      }
+      operator = randomOp < 0.5 ? '+' : '-';
 
       if (operator === '+') {
         // Tạo câu hỏi cộng, đảm bảo tổng không vượt quá 10
@@ -46,11 +40,9 @@ const App: React.FC = () => {
         num1 = num2 + correctAnswer;
       }
 
-      // Tạo một khóa duy nhất cho câu hỏi để tránh trùng lặp
-      // Đối với phép cộng, thứ tự không quan trọng (ví dụ: 2+3 giống 3+2)
-      const questionKey = operator === '+'
-        ? [num1, num2].sort().join('+')
-        : `${num1}-${num2}`;
+      // Tạo một khóa duy nhất cho câu hỏi để tránh trùng lặp.
+      // Giờ đây, 5+3 và 3+5 được coi là hai câu hỏi khác nhau.
+      const questionKey = `${num1}${operator}${num2}`;
 
       if (existingQuestions.has(questionKey)) {
         continue; // Nếu câu hỏi đã tồn tại, bỏ qua và tạo câu mới
