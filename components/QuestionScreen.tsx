@@ -30,7 +30,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
       setSelectedAnswer(null); // Không có câu trả lời nào được chọn
       const timerId = setTimeout(() => {
         onAnswer(-1); // -1 để chỉ hết giờ
-      }, 2000); // Hiển thị câu trả lời đúng trong 2 giây
+      }, 1000); // Hiển thị câu trả lời đúng trong 1 giây
       return () => clearTimeout(timerId);
     }
 
@@ -47,10 +47,10 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
     setIsAnswered(true);
     setSelectedAnswer(option);
     
-    // Tự động chuyển sang câu tiếp theo sau 2 giây
+    // Tự động chuyển sang câu tiếp theo sau 1 giây
     setTimeout(() => {
       onAnswer(option);
-    }, 2000);
+    }, 1000);
   }, [isAnswered, onAnswer]);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
   };
 
   const getButtonClass = (option: number) => {
-    let baseClass = "relative text-5xl font-bold py-8 px-6 rounded-2xl shadow-lg transform transition-all duration-300 focus:outline-none border-2";
+    let baseClass = "relative text-4xl md:text-5xl font-bold py-6 md:py-8 px-6 rounded-2xl shadow-lg transform transition-all duration-300 focus:outline-none border-2";
     
     if (isAnswered) {
       if (option === question.correctAnswer) {
@@ -103,13 +103,13 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
   
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <div className="relative w-full max-w-4xl bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-2xl">
+      <div className="relative w-full max-w-4xl bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-8 rounded-3xl shadow-2xl">
         <button
             onClick={handleQuit}
-            className="absolute top-5 left-5 text-slate-400 hover:text-white transition-colors duration-200 p-2 rounded-full hover:bg-slate-700/50"
+            className="absolute top-3 sm:top-5 left-3 sm:left-5 text-slate-400 hover:text-white transition-colors duration-200 p-2 rounded-full hover:bg-slate-700/50"
             aria-label="Về màn hình chính"
         >
-            <QuitIcon className="w-8 h-8" />
+            <QuitIcon className="w-7 h-7 sm:w-8 sm:h-8" />
         </button>
 
         <div className="mb-6 text-center">
@@ -135,13 +135,13 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
             </span>
         </div>
         
-        <div className="bg-slate-900/60 flex items-center justify-center h-48 rounded-2xl mb-8">
-            <p className="text-8xl font-bold text-white tracking-wider">
+        <div className="bg-slate-900/60 flex items-center justify-center h-40 md:h-48 rounded-2xl mb-8">
+            <p className="text-6xl sm:text-7xl md:text-8xl font-bold text-white tracking-wider">
                 {question.num1} {question.operator} {question.num2} = ?
             </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           {question.options.map((option, index) => (
             <button
               key={index}
@@ -149,18 +149,18 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
               disabled={isAnswered}
               className={getButtonClass(option)}
             >
-              <span className="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-900/40 flex items-center justify-center text-2xl font-mono text-slate-400 border border-slate-600">
+              <span className="absolute top-2 left-2 sm:top-3 sm:left-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900/40 flex items-center justify-center text-xl sm:text-2xl font-mono text-slate-400 border border-slate-600">
                 {index + 1}
               </span>
               {option}
               {isAnswered && option === question.correctAnswer && (
-                <div className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-slate-800 shadow-md flex items-center justify-center">
-                  <CheckIcon className="w-8 h-8 text-green-400" />
+                <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 shadow-md flex items-center justify-center">
+                  <CheckIcon className="w-7 h-7 sm:w-8 sm:h-8 text-green-400" />
                 </div>
               )}
               {isAnswered && option === selectedAnswer && option !== question.correctAnswer && (
-                <div className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-slate-800 shadow-md flex items-center justify-center">
-                  <XIcon className="w-8 h-8 text-red-400" />
+                <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 shadow-md flex items-center justify-center">
+                  <XIcon className="w-7 h-7 sm:w-8 sm:h-8 text-red-400" />
                 </div>
               )}
             </button>
