@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Question } from '../types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Question, Difficulty } from '../types';
 import { CheckIcon, XIcon, QuitIcon } from './Icons';
+import JourneyMap from './JourneyMap';
+import CorrectAnswerEffect from './CorrectAnswerEffect';
+import { playSound } from '../utils/sounds';
 
 interface QuestionScreenProps {
   question: Question;
@@ -9,17 +12,22 @@ interface QuestionScreenProps {
   questionNumber: number;
   totalQuestions: number;
   timeLimit: number;
+  difficulty: Difficulty;
 }
 
-const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQuit, questionNumber, totalQuestions, timeLimit }) => {
+const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQuit, questionNumber, totalQuestions, timeLimit, difficulty }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState(timeLimit);
+  const [correctEffect, setCorrectEffect] = useState<{ top: number, left: number } | null>(null);
+  const answerButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     setSelectedAnswer(null);
     setIsAnswered(false);
     setTimeLeft(timeLimit);
+    setCorrectEffect(null);
+    answerButtonRefs.current = [];
   }, [question, timeLimit]);
 
   useEffect(() => {
@@ -27,37 +35,42 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
 
     if (timeLeft <= 0) {
       setIsAnswered(true);
-      setSelectedAnswer(null); // Không có câu trả lời nào được chọn
-      
-      // Đặt một timeout để chuyển sang câu hỏi tiếp theo sau khi hiển thị đáp án.
-      // Bằng cách không trả về một hàm dọn dẹp, chúng ta đảm bảo onAnswer(-1) sẽ được gọi
-      // sau khi state `isAnswered` được cập nhật, tránh việc timeout bị hủy.
+      setSelectedAnswer(null); 
       setTimeout(() => {
         onAnswer(-1); // -1 để chỉ hết giờ
       }, 1000);
-      return; // Dừng effect, không thiết lập interval.
+      return;
     }
 
-    // Thiết lập interval để đếm ngược thời gian.
     const intervalId = setInterval(() => {
       setTimeLeft(prev => prev - 1);
     }, 1000);
 
-    // Hàm dọn dẹp này chỉ dành cho interval.
     return () => clearInterval(intervalId);
   }, [timeLeft, isAnswered, onAnswer]);
   
-  const handleOptionClick = useCallback((option: number) => {
-    if (isAnswered) return; // Chỉ cho phép trả lời một lần
+  const handleOptionClick = useCallback((option: number, index: number) => {
+    if (isAnswered) return;
 
+    playSound('click');
     setIsAnswered(true);
     setSelectedAnswer(option);
+
+    if (option === question.correctAnswer) {
+      const buttonEl = answerButtonRefs.current[index];
+      if (buttonEl) {
+        const rect = buttonEl.getBoundingClientRect();
+        setCorrectEffect({
+          top: rect.top + rect.height / 2,
+          left: rect.left + rect.width / 2,
+        });
+      }
+    }
     
-    // Tự động chuyển sang câu tiếp theo sau 1 giây
     setTimeout(() => {
       onAnswer(option);
     }, 1000);
-  }, [isAnswered, onAnswer]);
+  }, [isAnswered, onAnswer, question.correctAnswer]);
   
   const handleQuit = () => {
     onQuit();
@@ -70,7 +83,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
       if (option === question.correctAnswer) {
         return `${baseClass} bg-green-600/90 text-white scale-110 border-green-400 ring-4 ring-green-500/50`;
       }
-      if (option === selectedAnswer) { // Câu trả lời sai đã chọn
+      if (option === selectedAnswer) {
         return `${baseClass} bg-red-600/90 text-white animate-shake border-red-400`;
       }
       return `${baseClass} bg-slate-800/60 text-slate-500 border-slate-700 opacity-70 cursor-not-allowed`;
@@ -91,24 +104,17 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
       <div className="relative w-full max-w-4xl bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-8 rounded-3xl shadow-2xl">
         <button
             onClick={handleQuit}
-            className="absolute top-3 sm:top-5 left-3 sm:left-5 text-slate-400 hover:text-white transition-colors duration-200 p-2 rounded-full hover:bg-slate-700/50"
+            className="absolute top-3 sm:top-5 left-3 sm:left-5 text-slate-400 hover:text-white transition-colors duration-200 p-2 rounded-full hover:bg-slate-700/50 z-20"
             aria-label="Về màn hình chính"
         >
             <QuitIcon className="w-7 h-7 sm:w-8 sm:h-8" />
         </button>
 
-        <div className="mb-6 text-center">
-          <div className="flex justify-center items-center text-slate-300 font-semibold mb-2 gap-4">
-            <span>Câu hỏi</span>
-            <span>{questionNumber} / {totalQuestions}</span>
-          </div>
-          <div className="w-full bg-slate-700/50 rounded-full h-4 max-w-xs mx-auto">
-            <div
-              className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-500"
-              style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
-            ></div>
-          </div>
-        </div>
+        <JourneyMap 
+          currentStep={questionNumber} 
+          totalSteps={totalQuestions} 
+          difficulty={difficulty}
+        />
 
         <div className="relative h-6 w-full bg-slate-700/50 rounded-full mb-8 overflow-hidden border-2 border-slate-700">
             <div
@@ -130,7 +136,8 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
           {question.options.map((option, index) => (
             <button
               key={index}
-              onClick={() => handleOptionClick(option)}
+              ref={el => answerButtonRefs.current[index] = el}
+              onClick={() => handleOptionClick(option, index)}
               disabled={isAnswered}
               className={getButtonClass(option)}
             >
@@ -149,6 +156,7 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
           ))}
         </div>
       </div>
+      {correctEffect && <CorrectAnswerEffect position={correctEffect} />}
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }

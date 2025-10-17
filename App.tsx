@@ -4,6 +4,7 @@ import { TOTAL_QUESTIONS } from './constants';
 import StartScreen from './components/StartScreen';
 import QuestionScreen from './components/QuestionScreen';
 import EndScreen from './components/EndScreen';
+import { playSound } from './utils/sounds';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('start');
@@ -72,7 +73,10 @@ const App: React.FC = () => {
   
   const handleAnswer = (answer: number) => {
     if (answer === questions[currentQuestionIndex].correctAnswer) {
+      playSound('correct');
       setScore(prev => prev + 1);
+    } else if (answer !== -1) { // -1 là hết giờ, không phát âm thanh
+      playSound('incorrect');
     }
     
     if (currentQuestionIndex < TOTAL_QUESTIONS - 1) {
@@ -113,6 +117,7 @@ const App: React.FC = () => {
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={TOTAL_QUESTIONS}
             timeLimit={timeLimit}
+            difficulty={difficulty}
           />
         );
       case 'finished':
