@@ -28,17 +28,23 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
     if (timeLeft <= 0) {
       setIsAnswered(true);
       setSelectedAnswer(null); // Không có câu trả lời nào được chọn
-      const timerId = setTimeout(() => {
+      
+      // Đặt một timeout để chuyển sang câu hỏi tiếp theo sau khi hiển thị đáp án.
+      // Bằng cách không trả về một hàm dọn dẹp, chúng ta đảm bảo onAnswer(-1) sẽ được gọi
+      // sau khi state `isAnswered` được cập nhật, tránh việc timeout bị hủy.
+      setTimeout(() => {
         onAnswer(-1); // -1 để chỉ hết giờ
-      }, 1000); // Hiển thị câu trả lời đúng trong 1 giây
-      return () => clearTimeout(timerId);
+      }, 1000);
+      return; // Dừng effect, không thiết lập interval.
     }
 
-    const timerId = setInterval(() => {
+    // Thiết lập interval để đếm ngược thời gian.
+    const intervalId = setInterval(() => {
       setTimeLeft(prev => prev - 1);
     }, 1000);
 
-    return () => clearInterval(timerId);
+    // Hàm dọn dẹp này chỉ dành cho interval.
+    return () => clearInterval(intervalId);
   }, [timeLeft, isAnswered, onAnswer]);
   
   const handleOptionClick = useCallback((option: number) => {
@@ -52,34 +58,13 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
       onAnswer(option);
     }, 1000);
   }, [isAnswered, onAnswer]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isAnswered) return;
-
-      const key = parseInt(event.key, 10);
-      if (key >= 1 && key <= 4) {
-        const optionIndex = key - 1;
-        if (optionIndex < question.options.length) {
-          const selectedOption = question.options[optionIndex];
-          handleOptionClick(selectedOption);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isAnswered, question.options, handleOptionClick]);
   
   const handleQuit = () => {
     onQuit();
   };
 
   const getButtonClass = (option: number) => {
-    let baseClass = "relative text-4xl md:text-5xl font-bold py-6 md:py-8 px-6 rounded-2xl shadow-lg transform transition-all duration-300 focus:outline-none border-2";
+    let baseClass = "relative text-4xl md:text-5xl font-bold py-6 md:py-8 px-6 rounded-2xl shadow-lg transform transition-all duration-300 focus:outline-none border-2 flex items-center justify-center";
     
     if (isAnswered) {
       if (option === question.correctAnswer) {
@@ -149,9 +134,6 @@ const QuestionScreen: React.FC<QuestionScreenProps> = ({ question, onAnswer, onQ
               disabled={isAnswered}
               className={getButtonClass(option)}
             >
-              <span className="absolute top-2 left-2 sm:top-3 sm:left-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900/40 flex items-center justify-center text-xl sm:text-2xl font-mono text-slate-400 border border-slate-600">
-                {index + 1}
-              </span>
               {option}
               {isAnswered && option === question.correctAnswer && (
                 <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 shadow-md flex items-center justify-center">
